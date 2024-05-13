@@ -30,32 +30,52 @@ export default class ProvinceRepository {
         return result.rows[0];
 
     }
-    /*
-    createAsync = async (entity) => {
-        const sql = `INSERT INTO provinces (name, full_name, latitude, longitude, display_order)
-        VALUES ($1, $2, $3, $4, $5)`;
-        const values = ['Jujuy', 'Provincia de Jujuy', -23.319974, -65.764427, 3];
-        const result = await client.query(sql, values); await client.end();
-        console.log('rowCount: ', result.rowCount);
+    createAsync = async(entity)=> {
+        console.log(entity.display_order)
+        let returnArray = null
+        const client = new Client(DBConfig)
+        try {
+            await client.connect()
+            const sql = `INSERT INTO provinces (name, full_name, latitude, longitude, display_order) VALUES ($1, $2, $3, $4,$5)`
+            const values = [entity.name,entity.full_name,entity.latitude,entity.longitude,entity.display_order]
+            const result = await client.query(sql,values)
+            await client.end()
+            returnArray = result.rows
+        } catch (error) {
+            console.log(error)
         }
-        updateAsync = async (entity) => {
-        const sql = `UPDATE provinces
-        SET id = 34, name = Provincia Modificada,full_name = Provincia Modificada, latitude = -24.895086288452148,longitude =-59.93218994140625, display_order = 100
-        WHERE id = $1 `;
+        return returnArray
     }
-    deleteByIdAsync = async (id) => {
-        console.log(`ProvinceRepository.deleteByIdAsync(${id})`);
-        let rowsAffected = 0;
-        try{
-            const client = await this.getDBClient();
-            const sql=`DELETE FROM provinces WHERE id = $1`;
-            const values = [id];
-            const result = await client.query(sql, values);
-            rowsAffected = result.rowCount;
-        }catch(error) {
-        console.log(error);
+    updateAsync = async(entity)=> {
+        let returnArray = null
+        const client = new Client(DBConfig)
+        try {
+            await client.connect()
+            const sql = `UPDATE public.provinces
+            SET name=$1, full_name=$2, latitude=$3, longitude=$4, display_order=$5
+            WHERE id = $6`
+            const values = [entity.name,entity.full_name,entity.latitude,entity.longitude,entity.display_order,entity.id]
+            const result = await client.query(sql,values)
+            await client.end()
+            returnArray = result.rows
+        } catch (error) {
+            console.log(error)
         }
-        return rowsAffected;
+        return returnArray
     }
-    */    
+    DeleteByIdAsync = async(id)=> {
+        let returnArray = null
+        const client = new Client(DBConfig)
+        try {
+            await client.connect()
+            const sql = "DELETE FROM public.provinces WHERE id = " + id
+            const result = await client.query(sql)
+            await client.end()
+            returnArray = result.rows
+        } catch (error) {
+            console.log(error)
+        }
+        return returnArray
+    }
 }
+
