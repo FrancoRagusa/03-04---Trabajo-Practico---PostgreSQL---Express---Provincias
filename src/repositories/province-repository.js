@@ -11,7 +11,7 @@ export default class ProvinceRepository {
             const sql = `SELECT * FROM provinces`;
             const result = await client.query(sql);
             await client.end();
-            //console.log(result);
+            console.log(result);
             returnArray = result.rows;
         } catch (error) {
             console.log(error);
@@ -68,7 +68,7 @@ export default class ProvinceRepository {
         const client = new Client(DBConfig)
         try {
             await client.connect()
-            const sql = "DELETE FROM public.provinces WHERE id = " + id
+            const sql = "DELETE FROM public.provinces WHERE id = " +id
             const result = await client.query(sql)
             await client.end()
             returnArray = result.rows
