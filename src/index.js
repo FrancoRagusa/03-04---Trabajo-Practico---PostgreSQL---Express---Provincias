@@ -14,7 +14,7 @@ app.use(express.json());
 app.use("/api/province", ProvinceRouter);
 app.use("/api/event_categories", EventRouter);
 app.use("/api/event_location", EventLocationRouter);
-app.use("/api/user", UserRouter);
+app.use("/api/users", UserRouter);
 
 app.listen(port, ()=> {
     console.log(`Listening on http://localhost:${port}`)

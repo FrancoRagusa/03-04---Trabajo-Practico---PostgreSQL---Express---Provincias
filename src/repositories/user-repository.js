@@ -10,7 +10,7 @@ export default class EventRepository
         const client = new Client(DBConfig);
         try {
             await client.connect();
-            const sql = `SELECT * FROM user`;
+            const sql = `SELECT * FROM users`;
             const result = await client.query(sql);
             await client.end();
             console.log(result);
@@ -26,7 +26,7 @@ export default class EventRepository
         const client = new Client(DBConfig);
         try {
             await client.connect();
-            const sql = 'SELECT * FROM user where id=$1';
+            const sql = 'SELECT * FROM users where id=$1';
             const values = [id];
             const result = await client.query(sql, values);
             await client.end();
@@ -49,8 +49,8 @@ export default class EventRepository
         const client = new Client(DBConfig)
         try {
             await client.connect()
-            const sql = `INSERT INTO user (name, password) VALUES ($1, $2)`
-            const values = [entity.name,entity.display_order]
+            const sql = `INSERT INTO users (username, password) VALUES ($1, $2)`
+            const values = [entity.username,entity.password,entity.display_order]
             const result = await client.query(sql,values)
             await client.end()
             returnArray = result.rows
@@ -60,47 +60,15 @@ export default class EventRepository
         return returnArray
     }
 
-    updateAsync = async(entity)=> {
-        let returnArray = null
-        const client = new Client(DBConfig)
-        try {
-            await client.connect()
-            const sql = `UPDATE user
-            SET name=$1, password=$2   
-            WHERE id = $6       `
-            const values = [entity.name,entity.password]
-            const result = await client.query(sql,values)
-            await client.end()
-            returnArray = result.rows
-        } catch (error) {
-            console.log(error)
-        }
-        return returnArray
-    }
-
-    DeleteByIdAsync = async(id)=> {
-        let returnArray = null
-        const client = new Client(DBConfig)
-        try {
-            await client.connect()
-            const sql = "DELETE FROM user WHERE id = " +id
-            const result = await client.query(sql)
-            await client.end()
-            returnArray = result.rows
-        } catch (error) {
-            console.log(error)
-        }
-        return returnArray
-    }
-
-    getByTokenAsync = async (name,password) => {
+  
+    LoginAsync = async (entity) => {
 
         let returnEntity = null;
         const client = new Client(DBConfig);
         try {
             await client.connect();
-            const sql = 'SELECT * FROM user where name=$1 AND password=$2';
-            const values = [name,password];
+            const sql = 'SELECT * FROM users where username=$1 AND password=$2';
+            const values = [entity.username,entity.password];
             const result = await client.query(sql, values);
             await client.end();
             if (result.rows.length >0)
