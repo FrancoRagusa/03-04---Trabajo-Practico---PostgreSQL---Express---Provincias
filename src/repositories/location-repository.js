@@ -1,6 +1,5 @@
 import DBConfig from '../configs/dbConfig.js';
 import pkg from 'pg'
-import jwt from 'jsonwebtoken';
 const { Client, Pool } = pkg;
 
 export default class EventRepository 
@@ -10,13 +9,12 @@ export default class EventRepository
         const client = new Client(DBConfig);
         try {
             await client.connect();
-            const sql = `SELECT * FROM users`;
+            const sql = `SELECT * FROM location`;
             const result = await client.query(sql);
             await client.end();
-            console.log(result);
             returnArray = result.rows;
         } catch (error) {
-            console.log(error);
+        console.log(error);
         }
         return returnArray;
     }
@@ -26,7 +24,7 @@ export default class EventRepository
         const client = new Client(DBConfig);
         try {
             await client.connect();
-            const sql = 'SELECT * FROM users where id=$1';
+            const sql = 'SELECT * FROM location where id=$1';
             const values = [id];
             const result = await client.query(sql, values);
             await client.end();
@@ -41,14 +39,16 @@ export default class EventRepository
         return returnEntity;
     }
 
+
+
     createAsync = async(entity)=> {
         console.log(entity.display_order)
         let returnArray = null
         const client = new Client(DBConfig)
         try {
             await client.connect()
-            const sql = `INSERT INTO users (first_name,last_name,username, password) VALUES ($1, $2,$3,$4)`
-            const values = [entity.first_name,entity.last_name,entity.username,entity.password]
+            const sql = `INSERT INTO location (name, id_province,  latitude, longitude) VALUES ($1, $2, $3, $4)`
+            const values = [entity.name, entity.id_province,  entity.latitude, entity.longitude]
             const result = await client.query(sql,values)
             await client.end()
             returnArray = result.rows
@@ -58,25 +58,36 @@ export default class EventRepository
         return returnArray
     }
 
-  
-    LoginAsync = async (entity) => {
-
-        let returnEntity = null;
-        const client = new Client(DBConfig);
+    updateAsync = async(entity)=> {
+        let returnArray = null
+        const client = new Client(DBConfig)
         try {
-            await client.connect();
-            const sql = 'SELECT * FROM users where username=$1 AND password=$2';
-            const values = [entity.username,entity.password];
-            const result = await client.query(sql, values);
-            await client.end();
-            if (result.rows.length >0)
-            {
-                returnEntity=result.rows[0]
-            }
-           
+            await client.connect()
+            const sql = `UPDATE event_location
+            SET name=$1, full_adress=$2, max_capacity=$3, latitude=$4, longitude=$5   
+            WHERE id = $6       `
+            const values = [entity.name,entity.display_order]
+            const result = await client.query(sql,values)
+            await client.end()
+            returnArray = result.rows
         } catch (error) {
-            console.log(error);
+            console.log(error)
         }
-        return returnEntity;
+        return returnArray
+    }
+
+    DeleteByIdAsync = async(id)=> {
+        let returnArray = null
+        const client = new Client(DBConfig)
+        try {
+            await client.connect()
+            const sql = "DELETE FROM event_location WHERE id = " +id
+            const result = await client.query(sql)
+            await client.end()
+            returnArray = result.rows
+        } catch (error) {
+            console.log(error)
+        }
+        return returnArray
     }
 }
