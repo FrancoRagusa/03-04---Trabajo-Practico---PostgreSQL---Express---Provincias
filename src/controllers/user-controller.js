@@ -1,3 +1,12 @@
+// import express from 'express';
+// import AuthService from '../services/auth-service.js';
+// import jwt from 'jsonwebtoken';
+// const router = express.Router();
+
+// const secretKey = 'mysecretkey';
+// const svc = new AuthService();
+
+
 import {Router} from "express"
 import UserService from '../services/user-service.js'
 import jwt from 'jsonwebtoken'
@@ -20,31 +29,17 @@ router.post("/register",async (req,res)=> {
     }
 
 })
-router.post("/login",async (req,res)=> {
-    console.log("ads")
-            let respuesta;
-            const returnArray = await svc.LoginAsync(req.body)
-          if(returnArray != null) {
-            const secretKey = "perritoBarrios"
-            const options =
-            {
-                expiresIn : '1h',
-                issuer : 'eventos'
-            }
-            
-            if(returnArray != null) 
-          {
-              respuesta = res.status(200).json(returnArray)
-              const token = jwt.sign( req.body,secretKey,options); 
-              console.log("Token=",token)
-          }
-           else 
-          {
-              respuesta = res.status(500).json("Error Interno")
-          }
-          return respuesta
-      
-            
-               }
-})
-export default router
+router.post('/login', async (req, res) => {
+    const { email, password } = req.body;
+  
+    const { user, error } = await svc.loginAsync(email, password);
+    if (error) {
+      res.status(401).json({ error: 'Credenciales incorrectas' });
+    } else {
+      const token = jwt.sign({ id: user.id, email: user.email }, secretKey, { expiresIn: '1h' });
+      res.json({ token });
+    }
+  });
+  
+  export default router;
+
