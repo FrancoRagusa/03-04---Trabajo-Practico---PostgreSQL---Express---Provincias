@@ -21,13 +21,25 @@ export default class ProvinceRepository {
     
     getByIdAsync = async (id) => {
         const client = new Client(DBConfig);
-        const sql = 'SELECT from provinces WHERE id=$1';
+        console.log("getByIdAsync:", id);
+        const sql = 'SELECT * from public.provinces WHERE id=$1';
         const values = [id];
-        const result = await
-        client.query(sql, values); await client.end();
-        console.log('Resultados: length', result.rows.length);
-        console.log('result.rows[0]', result.rows[0])   ;
-        return result.rows[0];
+        let resultadoArray  = [];
+        try{
+            console.log("getByIdAsync: Antes", id);
+            const result = await client.query(sql, values); 
+            await client.end();
+            console.log("getByIdAsync: Despues", id);
+            resultadoArray = result.rows[0];
+            console.log('Resultados: length', resultadoArray.length);
+            console.log('result.rows[0]', resultadoArray[0])   ;
+        }catch(error){
+            // Error
+            console.log("getByIdAsync: error", error);
+        }
+        
+        
+        return resultadoArray;
 
     }
     createAsync = async(entity)=> {

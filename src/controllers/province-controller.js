@@ -16,7 +16,9 @@ router.get('', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   let respuesta;
-const returnArray = await svc.getByIdAsync(req.query.id);
+  console.log("COFAAAAA");
+  console.log("req.params.id", req.params.id);
+  const returnArray = await svc.getByIdAsync(req.params.id);
   if (returnArray != null){
     respuesta = res.status(200).json(returnArray);
   } else {
