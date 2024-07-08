@@ -1,14 +1,5 @@
-// import express from 'express';
-// import AuthService from '../services/auth-service.js';
-// import jwt from 'jsonwebtoken';
-// const router = express.Router();
-
-// const secretKey = 'mysecretkey';
-// const svc = new AuthService();
-
-
 import {Router} from "express"
-import UserService from '../services/user-service.js'
+import UserService from '../services/auth-service.js'
 import jwt from 'jsonwebtoken'
 const router = Router()
 const svc = new UserService()
@@ -30,14 +21,14 @@ router.post("/register",async (req,res)=> {
 
 })
 router.post('/login', async (req, res) => {
-    const { email, password } = req.body;
+    const { username, password } = req.body;
   
-    const { user, error } = await svc.loginAsync(email, password);
-    if (error) {
-      res.status(401).json({ error: 'Credenciales incorrectas' });
+    
+    const resultado = await svc.loginAsync(username, password);
+    if (!resultado.success) {
+      return res.status(401).json(resultado);
     } else {
-      const token = jwt.sign({ id: user.id, email: user.email }, secretKey, { expiresIn: '1h' });
-      res.json({ token });
+        return res.json(resultado);
     }
   });
   

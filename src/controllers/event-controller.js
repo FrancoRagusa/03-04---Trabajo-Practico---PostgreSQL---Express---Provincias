@@ -1,217 +1,128 @@
 
-import {Router} from "express"
-import EventService from '../services/event-service.js'
-import EventLocationService from '../services/eventLocation-service.js'
-import UserService from "../services/user-service.js"
-const router = Router()
-import jwt from 'jsonwebtoken'
-const svcE = new EventLocationService()
-const svc = new EventService()
-const svu = new UserService()
-const TokenMiddleWare = async function (req,res,next) {
-    if(req.headers.authorization) {
-        const token = req.headers.authorization.split(' ')[1];
-        try {
-            let payloadOriginal = await jwt.verify(token,"MatiPalito" )
-        } catch (error) {
-            return res.status(401).json("Unauthorized")
-        }
-        next()
-    } else {
-        return res.status(401).json("Unauthorized")
-    }
+import { Router } from "express";
+import EventService from "../services/event-service.js";
+import EventLocationService from "../services/event-location-service.js";
+import AuthMiddleware from "../middleware/auth-middleware.js";
+
+const router = Router();
+const EventSvc = new EventService();
+const EventLocationSvc = new EventLocationService();
 
 
-}
-router.get('',async (req,res)=> {
-    const {name,category,startdate,tag} = req.query
-    let querysUser = []
-    if(name != undefined) {
-        querysUser.push({
-            "data" : "name",
-            "value" : name,
-            "s" : "e"
-        })
-    } 
-    if(category != undefined) {
-        querysUser.push({
-            "data" : "name",
-            "value" : category,
-            "s" : "c"
-        })
-    } 
-    if(startdate != undefined) {
-        querysUser.push({
-            "data" : "start_date",
-            "value" : startdate,
-            "s" : "e"
-        })
-    } 
-    if(tag != undefined) {
-        querysUser.push({
-            "data" : "name",
-            "value" : tag,
-            "s" : "t"
-        })
-    } 
-    let query = "select e.*"
-    query+= " FROM events e INNER JOIN event_categories c ON e.id_event_category = c.id INNER JOIN event_tags f ON e.id = f.id_event INNER JOIN tags t ON f.id_tag = t.id WHERE "
-    querysUser.forEach((element,i) => {
-        if(i == 0) {
-            query += element.s +"." + element.data +" = "+ "'"+element.value+"'" 
-        } else {
-            query += " AND "+element.s +"." + element.data +" = "+ "'"+element.value+"'"
-        }
-    });
-    let respuesta
-    const returnArray = await svc.getAllAsync(query)
-    if(returnArray != null) {
-        respuesta = res.status(200).json(returnArray)
-    } else {
-        respuesta = res.status(500).json("Error Interno")
-    }
-    return respuesta
-})
-router.get('/:id',async (req,res)=> {
-    let respuesta
-    const returnArray = await svc.getIdAsync(req.params.id)
-    if(returnArray != null) {
-        respuesta = res.status(200).json(returnArray)
-    } else {
-        respuesta = res.status(500).json("Error Interno")
-    }
-    return respuesta
-})
-router.post("",TokenMiddleWare,async (req,res)=> {
-    let respuesta
-    let capacidad = await svcE.getAllAsyncId(req.body.id_event_location)
-    if(req.body.name == "" || req.body.description == "" || req.body.price < 0 || req.body.duration_in_minutes < 0 || req.body.max_assistance > capacidad[0].max_capacity) {
-        respuesta = res.status(400).json("Bad Request")
-    } else {
-        const returnArray = await svc.createAsync(req.body)
-        if(returnArray != null) {
-            respuesta = res.status(200).json(returnArray)
-        } else {
-            respuesta = res.status(500).json("Error Interno")
-        }
-    }
+router.post('', AuthMiddleware.validateToken, async (req, res) => {
+  let response;
+  const entity = req.body;
 
-    return respuesta
-})
+  let eventCapacity = await EventLocationSvc.getByIdAsync(entity.id_event_location);
 
-router.put("",TokenMiddleWare,async (req,res)=> {
-    let respuesta
-    const returnArray = await svc.updateAsync(req.body)
-    if(returnArray != null) {
-        respuesta = res.status(200).json(returnArray)
-    } else {
-        respuesta = res.status(500).json("Error Interno")
-    }
-    return respuesta
-})
-router.delete("/:id",TokenMiddleWare,async (req,res)=> {
-    let respuesta
-    const returnArray = await svc.DeleteByIdAsync(req.params.id)
-    if(returnArray != null) {
-        respuesta = res.status(200).json(returnArray)
-    } else {
-        respuesta = res.status(500).json("Error Interno")
-    }
-    return respuesta
-})
-router.delete("/:id/enrollment",TokenMiddleWare,async (req,res)=> {
-    let respuesta
-    const returnArray = await svc.DeleteByIdEnrollmentAsync(req.params.id)
-    const event = await svc.getAllAsync(eventId);
-    if(returnArray != null || new Date(event[0].start_date) <= new Date()) {
-        respuesta = res.status(200).json(returnArray)
-    } else {
-        respuesta = res.status(500).json("Error Interno")
-    }
-    return respuesta
-})
-router.post("/:id/enrollment", TokenMiddleWare, async (req, res) => {
-    const token = req.headers.authorization.split(' ')[1];
-    let payloadOriginal = await jwt.verify(token, "MatiPalito");
-    const eventId = req.params.id; 
-    const event = await svc.getAllAsync(eventId);
-    const idUser = await svu.GetId(payloadOriginal.username)
-    const svcES = await svc.GetEnrollment(eventId);
-    const datos = {
-        "id_event": eventId,
-        "id_user": idUser[0].id,
-        "description": "muy bueno",
-        "registration_date_time": new Date(),
-        "attended": 1,
-        "observations": "muy bueno",
-        "rating": 10
-    };
-    if (event[0].max_assistance < svcES.length || new Date(event[0].start_date) <= new Date() || event[0].enabled_for_enrollment == 0) {
-        res.status(400).json("Bad Request"); 
-    } else {
-        const returnArray = await svc.createEnrrollmentAsync(datos);
-        if (returnArray != null) {
-            res.status(200).json(returnArray); 
-        } else {
-            res.status(500).json("Error Interno"); 
-        }
-    }
+  if (!entity.name || typeof entity.name !== 'string' || entity.name.length < 3) {
+    return res.status(400).json({ error: "No existe ese evento" });
+  }
+  if (!entity.description || typeof entity.description !== 'string' || entity.description.length < 3) {
+    return res.status(400).json({ error: "No existe esa descripcion de evento" });
+  }
+  if (!entity.id_event_category || isNaN(entity.id_event_category)) {
+    return res.status(400).json({ error: "No existe esa categoria evento" });
+  }
+  if (!entity.id_event_location || isNaN(entity.id_event_location)) {
+    return res.status(400).json({ error: "No existe ese evento con esa ubicacion" });
+  }
+  if (!entity.start_date || isNaN(Date.parse(entity.start_date))) {
+    return res.status(400).json({ error: "No existe esa fecha de evento" });
+  }
+  if (entity.max_assistance > eventCapacity.max_capacity) {
+    return res.status(400).json({ error: "no existe" });
+  }
+  if (entity.price < 0 || isNaN(entity.price)) {
+    return res.status(400).json({ error: "No existe esa duracion del evento" });
+  }
+  if (entity.duration_in_minutes < 0 || isNaN(entity.duration_in_minutes)) {
+    return res.status(400).json({ error: "No existe esa duracion de evento" });
+  }
+  if (typeof entity.enabled_for_enrollment !== 'boolean') {
+    return res.status(400).json({ error: "No existe ese enrollment" });
+  }
+
+  console.log(entity);
+  const returnArray = await EventSvc.createAsync(entity);
+  if (returnArray != null) {
+    response = res.status(201).json(returnArray);
+  } else {
+    response = res.status(500).send('Error interno');
+  }
+  return response;
+
 });
-router.get("/:id/enrollment",async(req,res)=> {
-    const {id} = req.params
-    const {first_name,last_name,username,attended,rating} =  req.query 
-    let querysUser = []  
-    let queryN = []
-    if(first_name != undefined) {
-        querysUser.push({
-            "data" : "first_name",
-            "value" : first_name,
-            "s" : "u"
-        })
-    } 
-    if(last_name != undefined) {
-        querysUser.push({
-            "data" : "last_name",
-            "value" : last_name,
-            "s" : "u"
-        })
-    }
-    if(username != undefined) {
-        querysUser.push({
-            "data" : "username",
-            "value" : username,
-            "s" : "u"
-        })
-    }
-    if(attended != undefined) {
-        querysUser.push({
-            "data" : "attended",
-            "value" : attended,
-            "s" : "e"
-        })
-    }
-    if(rating != undefined) {
-        querysUser.push({
-            "data" : "rating",
-            "value" : rating,
-            "s" : "e"
-        })
-    }
-    let query = "select *"
-    query+= " FROM event_enrollments e INNER JOIN users u ON e.id_user = u.id WHERE e.id_event = " + id +" AND "
-    querysUser.forEach((element,i) => {
-        if(i == 0) {
-            query += element.s +"." + element.data +" = "+ "'"+element.value+"'" 
-        } else {
-            query += " AND "+element.s +"." + element.data +" = "+ "'"+element.value+"'"
-        }
-    });
-    const returnArray = await svc.getEnrollment(query);
-        if (returnArray != null) {
-            res.status(200).json(returnArray); 
-        } else {
-            res.status(500).json("Error Interno"); 
-        }
-})
 
-export default router
+router.put('', AuthMiddleware.validateToken, async (req, res) => {
+  let response;
+  const entity = req.body;
+
+  if (!entity.name || typeof entity.name !== 'string' || entity.name.length < 3) {
+    return res.status(400).json({ error: "No existe ese evento" });
+  }
+  if (!entity.description || typeof entity.description !== 'string' || entity.description.length < 3) {
+    return res.status(400).json({ error: "No existe esa descripcion de evento" });
+  }
+  if (!entity.id_event_category || isNaN(entity.id_event_category)) {
+    return res.status(400).json({ error: "No existe esa categoria evento" });
+  }
+  if (!entity.id_event_location || isNaN(entity.id_event_location)) {
+    return res.status(400).json({ error: "No existe ese evento con esa ubicacion" });
+  }
+  if (!entity.start_date || isNaN(Date.parse(entity.start_date))) {
+    return res.status(400).json({ error: "No existe esa fecha de evento" });
+  }
+  if (entity.price < 0 || isNaN(entity.price)) {
+    return res.status(400).json({ error: "No existe esa duracion del evento" });
+  }
+  if (entity.duration_in_minutes < 0 || isNaN(entity.duration_in_minutes)) {
+    return res.status(400).json({ error: "No existe esa duracion de evento" });
+  }
+  if (typeof entity.enabled_for_enrollment !== 'boolean') {
+    return res.status(400).json({ error: "No existe ese enrollment" });
+  }
+
+  console.log(entity);
+
+  const returnArray = await EventSvc.updateAsync(entity);
+
+  if (returnArray != null) {
+    response = res.status(200).json(returnArray);
+  } else {
+    response = res.status(404).send('No existe ese evento');
+  }
+  return response;
+
+});
+
+router.delete('/:id', AuthMiddleware.validateToken, async (req, res) => {
+  let response;
+  const element = req.params.id;
+
+  const returnArray = await EventSvc.deleteAsync(element);
+
+  if (returnArray != null) {
+    response = res.status(200).json(returnArray);
+  } else {
+    response = res.status(404).send('No existe ese evento');
+  }
+  return response;
+});
+
+router.get("/:id", async (req, res) => {
+  const eventId = req.params.id;
+
+  try {
+    const result = await EventSvc.getByIdAsync(eventId);
+    if (result) {
+      res.status(200).json(result);
+    } else {
+      res.status(404).json({ error: "No existe ese evento" });
+    }
+  } catch (error) {
+    res.status(500).json({ error: "Error del servidor." });
+  }
+});
+
+export default router;
